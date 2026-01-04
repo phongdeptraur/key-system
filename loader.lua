@@ -154,10 +154,31 @@ if key == "" then
 end
 
 local ok, data = checkKey(key)
+
 if not ok then
-    safeKick("KEY DENIED: " .. tostring(data and data.reason or "UNKNOWN"))
+    local reason = "UNKNOWN"
+
+    if type(data) == "table" then
+        -- ưu tiên reason từ API
+        if type(data.reason) == "string" and data.reason ~= "" then
+            reason = data.reason
+        else
+            -- fallback theo ok nếu API không gửi reason
+            if data.ok == false then
+                reason = "DENIED"
+            elseif type(data.ok) == "string" and data.ok ~= "" then
+                -- phòng trường hợp data.ok bị string "ok"/"false" (bậy bạ)
+                reason = data.ok
+            end
+        end
+    elseif type(data) == "string" and data ~= "" then
+        reason = data
+    end
+
+    safeKick("KEY DENIED: " .. reason)
     return
 end
+
 
 saveKey(key)
 getgenv().License = data.info or {}
