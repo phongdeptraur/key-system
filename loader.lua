@@ -34,15 +34,39 @@ end
 -- ===== SAFE KICK =====
 local function safeKick(reason)
     reason = tostring(reason or "Access denied")
+
+    -- lấy LocalPlayer an toàn (không dùng :Wait())
     local lp = Players.LocalPlayer
     if not lp then
-        Players.PlayerAdded:Wait()
-        lp = Players.LocalPlayer
+        for _ = 1, 50 do -- đợi tối đa ~5s
+            lp = Players.LocalPlayer
+            if lp then break end
+            if task and task.wait then task.wait(0.1) else wait(0.1) end
+        end
     end
-    pcall(function()
-        lp:Kick(reason)
-    end)
+
+    -- nếu vẫn chưa có player thì thôi (tránh crash)
+    if not lp then
+        warn("[KICK] No LocalPlayer to kick:", reason)
+        return
+    end
+
+    -- Kick nếu có, không thì fallback Destroy
+    local kickFn = lp.Kick
+    if type(kickFn) == "function" then
+        pcall(function() lp:Kick(reason) end)
+        return
+    end
+
+    local destroyFn = lp.Destroy
+    if type(destroyFn) == "function" then
+        pcall(function() lp:Destroy() end)
+        return
+    end
+
+    warn("[KICK] Neither Kick nor Destroy available:", reason)
 end
+
 
 -- ===== load config =====
 local cfgSrc = httpGet(CONFIG_URL)
