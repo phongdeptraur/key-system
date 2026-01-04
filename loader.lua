@@ -3,14 +3,30 @@
 -- loadstring(game:HttpGet("RAW_LOADER_URL"))()
 
 local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
 
--- ====== CONFIG RAW URL (SỬA CHỖ NÀY) ======
-local CONFIG_URL = "https://raw.githubusercontent.com/phongdeptraur/key-system/refs/heads/main/src/config.lua"
+-- ===== SAFE KICK =====
+local function safeKick(reason)
+    reason = tostring(reason or "Access denied")
 
--- ====== Load config ======
+    local lp = Players.LocalPlayer
+    if not lp then
+        Players.PlayerAdded:Wait()
+        lp = Players.LocalPlayer
+    end
+
+    task.delay(0.5, function()
+        pcall(function()
+            lp:Kick(reason)
+        end)
+    end)
+end
+
+-- ===== CONFIG =====
+local CONFIG_URL = "https://raw.githubusercontent.com/USER/REPO/main/src/config.lua"
 local Config = loadstring(game:HttpGet(CONFIG_URL))()
 
--- ====== File save/load key (optional) ======
+-- ===== FILE KEY SAVE =====
 local KEY_FILE = "tx_key.txt"
 
 local function canFile()
@@ -33,7 +49,6 @@ local function getKey()
             return saved
         end
     end
-
     return ""
 end
 
@@ -41,7 +56,7 @@ local function saveKey(k)
     if canFile() then pcall(function() writefile(KEY_FILE, k) end) end
 end
 
--- ====== Cache ======
+-- ===== CACHE =====
 local cache = { key=nil, t=0, data=nil, ok=false }
 
 local function checkKey(key)
@@ -51,35 +66,36 @@ local function checkKey(key)
 
     local url = Config.API .. "?key=" .. HttpService:UrlEncode(key)
     local raw = game:HttpGet(url)
-
     local data = HttpService:JSONDecode(raw)
-    local ok = (data.ok == true)
 
+    local ok = (data.ok == true)
     cache = { key=key, t=os.time(), data=data, ok=ok }
     return ok, data
 end
 
--- ====== Flow ======
+-- ===== FLOW =====
 local key = getKey()
 if key == "" then
-    warn("❌ Missing key. Set: getgenv().Key = \"YOUR_KEY\"")
+    safeKick("❌ Missing key\nUse: getgenv().Key = \"YOUR_KEY\"")
     return
 end
 
 local ok, data = checkKey(key)
 if not ok then
-    warn("❌ KEY DENIED:", data and data.reason or "UNKNOWN")
+    local reason = (data and data.reason) or "UNKNOWN"
+    safeKick("❌ KEY DENIED: " .. reason)
     return
 end
 
+-- ===== OK =====
 saveKey(key)
 getgenv().License = data.info or {}
 
--- Load main
 local mainSrc = game:HttpGet(Config.MAIN_RAW)
 local f, err = loadstring(mainSrc)
 if not f then
-    warn("❌ Main compile error:", err)
+    safeKick("❌ Main script error")
     return
 end
+
 return f()
