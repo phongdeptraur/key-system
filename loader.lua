@@ -141,9 +141,21 @@ local function checkKey(key)
         return false, { ok=false, reason="API_BAD_JSON", raw=raw }
     end
 
-    local pass = (data.ok == true)
-    cache = { key=key, t=os.time(), ok=pass, data=data }
-    return pass, data
+-- hỗ trợ nhiều format API: ok/valid + reason/message
+local pass =
+    (data.ok == true) or
+    (data.valid == true)
+
+-- chuẩn hoá reason để chỗ khác dùng
+if pass then
+    data.reason = data.reason or data.message or "OK"
+else
+    data.reason = data.reason or data.message or "DENIED"
+end
+
+cache = { key=key, t=os.time(), ok=pass, data=data }
+return pass, data
+
 end
 
 -- ===== FLOW =====
