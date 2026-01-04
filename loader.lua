@@ -6,6 +6,8 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 
 -- ===== SAFE KICK =====
+local Players = game:GetService("Players")
+
 local function safeKick(reason)
     reason = tostring(reason or "Access denied")
 
@@ -15,12 +17,24 @@ local function safeKick(reason)
         lp = Players.LocalPlayer
     end
 
-    task.delay(0.5, function()
+    -- tương thích executor: ưu tiên task.delay, không có thì dùng delay/spawn
+    local function later(sec, fn)
+        if task and task.delay then
+            task.delay(sec, fn)
+        elseif delay then
+            delay(sec, fn)
+        else
+            spawn(fn)
+        end
+    end
+
+    later(0.5, function()
         pcall(function()
             lp:Kick(reason)
         end)
     end)
 end
+
 
 -- ===== CONFIG =====
 local CONFIG_URL = "https://raw.githubusercontent.com/USER/REPO/main/src/config.lua"
