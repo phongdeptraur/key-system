@@ -37,7 +37,7 @@ end
 
 
 -- ===== CONFIG =====
-local CONFIG_URL = "https://raw.githubusercontent.com/USER/REPO/main/src/config.lua"
+local CONFIG_URL = "https://raw.githubusercontent.com/phongdeptraur/key-system/main/src/config.lua"
 local Config = loadstring(game:HttpGet(CONFIG_URL))()
 
 -- ===== FILE KEY SAVE =====
