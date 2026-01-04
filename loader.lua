@@ -188,11 +188,28 @@ if key == "" then
     return
 end
 
-local pass, result = checkKey(key)
+local pass, result
+
+-- retry tối đa 5 lần, mỗi lần cách 2 giây (tổng ~8–10s)
+for attempt = 1, 5 do
+    pass, result = checkKey(key)
+    if pass then break end
+
+    -- nếu fail do "revoked"/"not_found" ngay sau khi bạn vừa add key,
+    -- cho nó thời gian sync rồi thử lại
+    local reason = tostring(result and result.reason or "UNKNOWN")
+    warn(("[LOADER] attempt %d/5 failed: %s"):format(attempt, reason))
+
+    if attempt < 5 then
+        if task and task.wait then task.wait(2) else wait(2) end
+    end
+end
+
 if not pass then
     safeKick("KEY DENIED: " .. tostring(result and result.reason or "UNKNOWN"))
     return
 end
+
 
 -- Key OK
 saveKey(key)
